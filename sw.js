@@ -1,4 +1,4 @@
-const C='vehicle-v3',F=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./logo.png'];
+const C='vehicle-v4',F=['./','./index.html','./manifest.json','./icon-192.png','./icon-512.png','./logo.png'];
 const notify=()=>self.clients.matchAll({includeUncontrolled:true}).then(cs=>cs.forEach(c=>c.postMessage({type:'update'})));
 self.addEventListener('install',e=>{e.waitUntil(caches.open(C).then(c=>Promise.all(F.map(u=>fetch(u,{cache:'reload'}).then(r=>r.ok&&c.put(u,r)).catch(()=>{})))).then(()=>self.skipWaiting()))});
 self.addEventListener('activate',e=>{e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==C).map(x=>caches.delete(x)))).then(()=>self.clients.claim()))});
