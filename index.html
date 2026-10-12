@@ -72,6 +72,11 @@ textarea{width:100%;min-height:90px;font:inherit;font-size:12px;direction:ltr;bo
 .upd[hidden]{display:none}.upd span{flex:1;font-weight:700;font-size:14px}.upd button{min-height:38px}
 .upd #updx{background:transparent;color:inherit;padding:0 8px}
 textarea[hidden]{display:none}
+.tgo{width:100%;min-height:56px;font-size:18px;border-radius:16px;background:var(--acc);color:var(--accink);margin-top:10px}
+.tgo.stop{background:var(--bad);color:#fff}
+.vd{margin-top:10px;padding:12px 14px;border-radius:14px;background:var(--soft)}
+.vd p{margin:0}.vd p+p{margin-top:4px;color:var(--mut);font-size:14px}.vd[hidden],#tcalc[hidden]{display:none}
+.vd.win{background:rgba(22,163,74,.14)}.vd.lose{background:rgba(220,38,38,.14)}
 </style>
 </head>
 <body>
@@ -81,13 +86,7 @@ textarea[hidden]{display:none}
 <select id="vsel" aria-label="المركبة"></select>
 
 <div class="tab" id="t1">
-<section id="limsec" class="hero">
-  <div class="hr"><span id="remlbl">المتبقي النهاردة</span><label class="hr" style="gap:6px">الحد اليومي <input id="lim" type="number" inputmode="decimal" aria-label="الحد اليومي"></label></div>
-  <div class="hn"><b id="rem">0</b><small>جنيه</small></div>
-  <div class="bar"><i id="bar"></i></div>
-  <div class="hr"><span id="limtxt"></span></div>
-  <div id="alert" style="margin-top:6px;font-weight:700"></div>
-</section>
+<div id="alert" class="bad" style="font-weight:700"></div>
 
 <section class="odo">
   <div class="oh"><h2>عداد المسافة</h2><span class="mut msg" id="gps">اضغط ابدأ وخلّي الشاشة مفتوحة</span></div>
@@ -106,6 +105,26 @@ textarea[hidden]{display:none}
   <div class="row" style="margin-top:10px"><input id="mkm" type="number" inputmode="decimal" placeholder="تعديل الكم يدويًا" aria-label="كم اليوم"><button class="alt fit" id="setkm">ضبط</button></div>
 </section>
 
+<section id="tripcard">
+  <div class="oh"><h2>تتبع المشوار</h2><span class="mut" id="tstat">مستني مشوار</span></div>
+  <div class="grid" style="margin-top:10px">
+    <div><span class="mut">كم المشوار</span><b id="tkm">0.0</b></div>
+    <div><span class="mut">المدة</span><b id="tmin">0:00</b></div>
+  </div>
+  <input id="tfare" type="number" inputmode="decimal" min="0" placeholder="سعر المشوار بالجنيه (اختياري)" aria-label="سعر المشوار" style="width:100%;margin-top:10px">
+  <button class="tgo" id="tgo">بدء المشوار</button>
+  <p class="mut" style="margin:8px 0 0">دوس بدء أول ما تتحرك للعميل، وإنهاء لما توصّله. الكم بيتحسب من الـ GPS.</p>
+  <div class="vd" id="tres" hidden></div>
+  <button class="pri" id="tcalc" hidden style="width:100%;margin-top:8px">احسب وسجّل المشوار</button>
+</section>
+
+<section>
+  <h2>الدخل والمشاوير</h2>
+  <div class="row"><input id="inc" type="number" inputmode="decimal" min="0" placeholder="دخل (جنيه)" aria-label="الدخل"><button class="pri fit" id="addinc" style="min-width:90px">سجّل</button></div>
+  <div class="row" style="margin-top:8px;align-items:center"><button id="trm" class="fit" style="min-width:52px">−</button><span style="text-align:center">مشاوير النهاردة <b id="tr">0</b></span><button id="trp" class="fit">+ مشوار</button></div>
+  <p class="mut" id="netT" style="margin:10px 0 0"></p>
+</section>
+
 <section>
   <h2>سجّل مصروف</h2>
   <div class="chips" id="chips">
@@ -122,13 +141,6 @@ textarea[hidden]{display:none}
     <input id="note" placeholder="ملاحظة (اختياري)" aria-label="ملاحظة">
     <button class="pri fit" id="add" style="min-width:90px">حفظ</button>
   </div>
-</section>
-
-<section>
-  <h2>الدخل والمشاوير</h2>
-  <div class="row"><input id="inc" type="number" inputmode="decimal" min="0" placeholder="دخل (جنيه)" aria-label="الدخل"><button class="pri fit" id="addinc" style="min-width:90px">سجّل</button></div>
-  <div class="row" style="margin-top:8px;align-items:center"><button id="trm" class="fit" style="min-width:52px">−</button><span style="text-align:center">مشاوير النهاردة <b id="tr">0</b></span><button id="trp" class="fit">+ مشوار</button></div>
-  <p class="mut" id="netT" style="margin:10px 0 0"></p>
 </section>
 </div>
 
@@ -171,7 +183,7 @@ textarea[hidden]{display:none}
 const K='scooter_expenses_v1';
 const TYPES={'سكوتر':[['تغيير زيت',1000],['الفرامل',5000],['الكاوتش',10000],['السير والفلتر',8000]],'موتوسيكل':[['تغيير زيت',2000],['السلسلة',3000],['الفرامل',6000],['الكاوتش',12000]],'عربية':[['تغيير زيت',5000],['فلتر الهواء',10000],['الفرامل',20000],['الكاوتش',40000]],'توك توك':[['تغيير زيت',1500],['الفرامل',5000],['الكاوتش',15000]],'ميكروباص / فان':[['تغيير زيت',5000],['الفرامل',15000],['الكاوتش',30000]],'شاحنة نقل':[['تغيير زيت',7000],['الفرامل',15000],['الكاوتش',30000]],'دراجة':[['الفرامل',2000],['السلسلة',3000],['الكاوتش',5000]]};
 const FUELS={'بنزين':'لتر','سولار':'لتر','غاز طبيعي':'م³','كهرباء':'ك.و.س'};
-const newData=t=>({limit:200,exp:[],inc:[],km:{},st:{},tr:{},fx:[],mt:(TYPES[t]||TYPES['سكوتر']).map((x,i)=>({id:i+1,n:x[0],e:x[1],at:0}))});
+const newData=t=>({exp:[],inc:[],km:{},st:{},tr:{},fx:[],mt:(TYPES[t]||TYPES['سكوتر']).map((x,i)=>({id:i+1,n:x[0],e:x[1],at:0}))});
 let DB=null,armV=null,lastVK='';
 try{const r=localStorage.getItem(K);if(r){const o=JSON.parse(r);DB=o.veh?o:{veh:[{id:1,n:'سكوتر',t:'سكوتر',f:'بنزين'}],cur:1,d:{1:Object.assign(newData('سكوتر'),o)}}}}catch(e){}
 if(!DB)DB={veh:[{id:1,n:'سكوتر',t:'سكوتر',f:'بنزين'}],cur:1,d:{1:newData('سكوتر')}};
@@ -212,17 +224,17 @@ function render(){
   $('sp').textContent=fm(spd);$('mt').textContent=fm(st.mt/60)+' د';
   $('av').textContent=st.mt>30?fm(kmT/(st.mt/3600),1):'—';$('mx').textContent=fm(st.mx);
 
-  const rem=S.limit-spentT;
-  $('limsec').classList.toggle('over',rem<0);
-  if(document.activeElement!==$('lim'))$('lim').value=S.limit;
-  $('rem').textContent=fm(Math.abs(rem));
-  $('remlbl').textContent=rem<0?'تعدّيت الحد اليومي':'المتبقي النهاردة';
-  $('limtxt').textContent='صرفت '+fm(spentT)+' من '+fm(S.limit);
-  $('bar').style.width=Math.min(100,S.limit>0?spentT/S.limit*100:0)+'%';
   const od=S.mt.filter(x=>x.at+x.e-kmAll<=0).map(x=>x.n);
   $('alert').textContent=od.length?'صيانة متأخرة: '+od.join('، '):'';
 
   $('tr').textContent=trips;
+  const tp=S.trip,ls=S.last,cc=kmM>1?(totE+fxS)/kmM:0;
+  $('tgo').textContent=tp?'إنهاء المشوار':'بدء المشوار';$('tgo').classList.toggle('stop',!!tp);
+  $('tstat').textContent=tp?(wid!==null?'المشوار شغال':'شغّل العداد من فوق'):'مستني مشوار';
+  updTrip();
+  const vd=$('tres'),vr=(ls&&!tp)?verdict(ls,cc):null;
+  vd.hidden=!vr;if(vr){vd.className='vd '+vr[0];vd.innerHTML='<p>'+vr[1]+'</p><p>'+vr[2]+'</p>'}
+  $('tcalc').hidden=!(ls&&!tp&&!(ls.fare>0));
   $('netT').textContent='دخل النهاردة '+fm(incT)+' ج | صافي '+fm(incT-spentT-fxT/dim)+' ج'+(trips>0&&incT>0?' | متوسط المشوار '+fm(incT/trips,1)+' ج':'');
 
   const cats=['بنزين','قطع غيار','نفخ كاوتش','أخرى'];
@@ -258,7 +270,6 @@ $('add').onclick=()=>{const a=parseFloat($('amt').value);if(!(a>0)){$('amt').foc
 $('addinc').onclick=()=>{const a=parseFloat($('inc').value);if(!(a>0)){$('inc').focus();return}S.inc.push({id:Date.now(),d:dstr(),a});save();$('inc').value='';render()};
 $('trp').onclick=()=>{const t=dstr();S.tr[t]=(S.tr[t]||0)+1;save();render()};
 $('trm').onclick=()=>{const t=dstr();S.tr[t]=Math.max(0,(S.tr[t]||0)-1);save();render()};
-$('lim').onchange=()=>{const n=parseFloat($('lim').value);if(n>=0){S.limit=n;save();render()}};
 $('setkm').onclick=()=>{const n=parseFloat($('mkm').value);if(n>=0){S.km[dstr()]=n;save();$('mkm').value='';render()}};
 $('madd').onclick=()=>{const n=$('mn').value.trim(),e=parseFloat($('me').value);if(n&&e>0){S.mt.push({id:Date.now(),n,e,at:sum(Object.keys(S.km),k=>S.km[k])});save();$('mn').value=$('me').value='';render()}};
 $('fadd').onclick=()=>{const n=$('fn').value.trim(),a=parseFloat($('fa').value);if(n&&a>0){S.fx.push({id:Date.now(),n,a});save();$('fn').value=$('fa').value='';render()}};
@@ -279,6 +290,30 @@ $('vt').onchange=()=>{if(['شاحنة نقل','ميكروباص / فان'].inclu
 $('vsel').onchange=()=>{switchV(+$('vsel').value);save();render()};
 $('vadd').onclick=()=>{const t=$('vt').value,id=Date.now();DB.veh.push({id,n:$('vn').value.trim()||t,t,f:$('vf').value});DB.d[id]=newData(t);$('vn').value='';switchV(id);save();render()};
 document.addEventListener('change',e=>{const i=e.target.dataset.me;if(!i)return;const x=S.mt.find(y=>y.id==i),v=parseFloat(e.target.value);if(x&&v>0){x.e=v;save();render()}});
+
+/* trip tracking */
+const KA=()=>sum(Object.keys(S.km),k=>S.km[k]);
+function updTrip(){const tp=S.trip;$('tkm').textContent=tp?fm(Math.max(0,KA()-tp.k0),1):'0.0';const s=tp?Math.floor((Date.now()-tp.t0)/1000):0;$('tmin').textContent=Math.floor(s/60)+':'+p2(s%60)}
+function verdict(L,c){
+  const km=L.km,mn=fm(L.min,0)+' د';
+  if(km<0.2)return ['','المشوار ماسجّلش كم يُذكر.','اتأكد إن الـ GPS شغال وإنت ماشي.'];
+  if(!(L.fare>0)){
+    if(c<=0)return ['','المشوار '+fm(km,1)+' كم في '+mn+'.','سجّل مصاريف وكم أكتر وأحسبلك التكلفة.'];
+    return ['','تكلفة الكم عليك <b>'+fm(c,1)+'</b> ج، يعني المشوار ده ('+fm(km,1)+' كم) تكلفته <b>'+fm(c*km)+'</b> ج.','أي سعر أقل من كده خسارة. اكتب السعر واضغط احسب.'];
+  }
+  const ppk=L.fare/km;
+  if(c<=0)return ['','سعر الكم طلع <b>'+fm(ppk,1)+'</b> ج.','سجّل مصاريف وكم أكتر وأقولك كسبان ولا خسران.'];
+  const net=L.fare-c*km;
+  if(ppk>=c)return ['win','<b style="color:#16A34A">كسبان ✔</b> الكم طلع بـ <b>'+fm(ppk,1)+'</b> ج وتكلفتك <b>'+fm(c,1)+'</b> ج.','صافي المشوار تقريبًا +'+fm(net)+' ج ('+fm(km,1)+' كم في '+mn+').'];
+  return ['lose','<b style="color:var(--bad)">خسران ✖</b> الكم طلع بـ <b>'+fm(ppk,1)+'</b> ج وتكلفتك <b>'+fm(c,1)+'</b> ج.','خسارة المشوار تقريبًا '+fm(-net)+' ج. الأفضل الكم ما يقلش عن '+fm(c,1)+' ج.'];
+}
+function logTrip(){const L=S.last;if(!(L.fare>0)||L.logged)return;S.inc.push({id:Date.now(),d:L.d,a:L.fare,n:'مشوار'});S.tr[L.d]=(S.tr[L.d]||0)+1;L.logged=true}
+$('tgo').onclick=()=>{
+  if(!S.trip){S.trip={t0:Date.now(),k0:KA()};S.last=null;if(wid===null)startGps()}
+  else{const fare=parseFloat($('tfare').value)||0;S.last={km:Math.max(0,KA()-S.trip.k0),min:(Date.now()-S.trip.t0)/60000,fare,d:dstr(),logged:false};S.trip=null;logTrip();$('tfare').value=''}
+  save();render()};
+$('tcalc').onclick=()=>{const f=parseFloat($('tfare').value);if(!(f>0)){$('tfare').focus();return}S.last.fare=f;logTrip();$('tfare').value='';save();render()};
+setInterval(()=>{if(S.trip)updTrip()},1000);
 
 /* theme */
 const TK='vehicle_theme';
@@ -306,8 +341,8 @@ if('serviceWorker' in navigator){
 let wid=null,last=null,wl=null,spd=0;
 const hav=(a,b)=>{const r=Math.PI/180,R=6371,x=Math.sin((b.lat-a.lat)*r/2)**2+Math.cos(a.lat*r)*Math.cos(b.lat*r)*Math.sin((b.lon-a.lon)*r/2)**2;return 2*R*Math.asin(Math.sqrt(x))};
 function stop(txt){if(wid!==null)navigator.geolocation.clearWatch(wid);wid=null;last=null;spd=0;try{wl&&wl.release()}catch(e){}wl=null;$('go').textContent='ابدأ';$('gps').textContent=txt||'متوقف';render()}
-$('go').onclick=async()=>{
-  if(wid!==null){stop('متوقف مؤقتًا. اضغط ابدأ للمتابعة');return}
+$('go').onclick=()=>{if(wid!==null){stop('متوقف مؤقتًا. اضغط ابدأ للمتابعة');return}startGps()};
+async function startGps(){
   if(!navigator.geolocation){$('gps').textContent='الجهاز مش بيدعم GPS. استخدم التعديل اليدوي';return}
   try{wl=await navigator.wakeLock.request('screen')}catch(e){}
   $('go').textContent='إيقاف مؤقت';$('gps').textContent='بيدوّر على إشارة GPS…';
